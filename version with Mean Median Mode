@@ -1,0 +1,195 @@
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+import java.util.*;
+
+/**
+ * JavaFX application that sorts comma-separated numbers
+ * and calculates mean, median, and mode.
+ *
+ * Features:
+ * - Input parsing
+ * - Sorting (Arrays.sort)
+ * - Statistical calculations
+ * - Resizable output area
+ * - Error handling
+ *
+ * @author YourName
+ * @version 1.1
+ */
+public class SortFX extends Application {
+
+    @Override
+    public void start(Stage stage) {
+
+        // ---------- INPUT ----------
+        Label inputLabel = new Label("Enter comma-separated numbers:");
+        TextField inputField = new TextField();
+        inputField.setPromptText("Example: 5, 2, 9, 1");
+
+        Button sortButton = new Button("Sort Numbers");
+
+        // ---------- OUTPUT ----------
+        Label outputLabel = new Label("Sorted Output:");
+        TextArea outputArea = new TextArea();
+        outputArea.setEditable(false);
+        outputArea.setWrapText(true);
+
+        // Make output area resizable
+        VBox.setVgrow(outputArea, Priority.ALWAYS);
+
+        // ---------- STATS OUTPUT ----------
+        Label meanLabel = new Label("Mean:");
+        TextField meanField = new TextField();
+        meanField.setEditable(false);
+
+        Label medianLabel = new Label("Median:");
+        TextField medianField = new TextField();
+        medianField.setEditable(false);
+
+        Label modeLabel = new Label("Mode:");
+        TextField modeField = new TextField();
+        modeField.setEditable(false);
+
+        // Grid layout for stats (clean alignment)
+        GridPane statsGrid = new GridPane();
+        statsGrid.setHgap(10);
+        statsGrid.setVgap(5);
+
+        statsGrid.add(meanLabel, 0, 0);
+        statsGrid.add(meanField, 1, 0);
+
+        statsGrid.add(medianLabel, 0, 1);
+        statsGrid.add(medianField, 1, 1);
+
+        statsGrid.add(modeLabel, 0, 2);
+        statsGrid.add(modeField, 1, 2);
+
+        // ---------- BUTTON ACTION ----------
+        sortButton.setOnAction(e -> {
+            try {
+                String input = inputField.getText();
+                String[] parts = input.split(",");
+
+                int[] numbers = new int[parts.length];
+
+                for (int i = 0; i < parts.length; i++) {
+                    numbers[i] = Integer.parseInt(parts[i].trim());
+                }
+
+                Arrays.sort(numbers);
+
+                // ---------- OUTPUT TEXT ----------
+                StringBuilder result = new StringBuilder();
+                result.append("Sorted (array view):\n");
+                result.append(Arrays.toString(numbers)).append("\n\n");
+                result.append("One per row:\n");
+
+                for (int n : numbers) {
+                    result.append(n).append("\n");
+                }
+
+                outputArea.setStyle("-fx-text-fill: black;");
+                outputArea.setText(result.toString());
+
+                // ---------- CALCULATIONS ----------
+                meanField.setText(String.format("%.2f", calculateMean(numbers)));
+                medianField.setText(String.format("%.2f", calculateMedian(numbers)));
+                modeField.setText(calculateMode(numbers));
+
+            } catch (Exception ex) {
+                outputArea.setStyle("-fx-text-fill: red;");
+                outputArea.setText("Invalid input. Use comma-separated numbers.");
+
+                meanField.clear();
+                medianField.clear();
+                modeField.clear();
+            }
+        });
+
+        // ---------- LAYOUT ----------
+        VBox layout = new VBox(10);
+        layout.setStyle("-fx-padding: 15;");
+
+        layout.getChildren().addAll(
+                inputLabel,
+                inputField,
+                sortButton,
+                outputLabel,
+                outputArea,
+                statsGrid
+        );
+
+        Scene scene = new Scene(layout, 450, 420);
+
+        stage.setTitle("Number Sorter + Statistics (JavaFX)");
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    /**
+     * Calculates the mean (average).
+     *
+     * @param numbers sorted integer array
+     * @return mean value
+     */
+    private double calculateMean(int[] numbers) {
+        int sum = 0;
+        for (int n : numbers) {
+            sum += n;
+        }
+        return (double) sum / numbers.length;
+    }
+
+    /**
+     * Calculates the median.
+     *
+     * @param numbers sorted integer array
+     * @return median value
+     */
+    private double calculateMedian(int[] numbers) {
+        int middle = numbers.length / 2;
+
+        if (numbers.length % 2 == 0) {
+            return (numbers[middle - 1] + numbers[middle]) / 2.0;
+        } else {
+            return numbers[middle];
+        }
+    }
+
+    /**
+     * Calculates the mode (most frequent value).
+     * If multiple modes exist, returns one of them.
+     *
+     * @param numbers sorted integer array
+     * @return mode as String
+     */
+    private String calculateMode(int[] numbers) {
+        Map<Integer, Integer> frequencyMap = new HashMap<>();
+
+        for (int n : numbers) {
+            frequencyMap.put(n, frequencyMap.getOrDefault(n, 0) + 1);
+        }
+
+        int mode = numbers[0];
+        int maxCount = 0;
+
+        for (Map.Entry<Integer, Integer> entry : frequencyMap.entrySet()) {
+            if (entry.getValue() > maxCount) {
+                mode = entry.getKey();
+                maxCount = entry.getValue();
+            }
+        }
+
+        return String.valueOf(mode);
+    }
+
+    public static void main(String[] args) {
+        launch();
+    }
+}
