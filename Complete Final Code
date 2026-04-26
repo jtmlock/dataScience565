@@ -1,0 +1,296 @@
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+import java.util.*;
+
+/**
+ * A JavaFX application that allows users to:
+ * <ul>
+ *     <li>Enter comma-separated numbers</li>
+ *     <li>Generate random numbers based on user-defined parameters</li>
+ *     <li>Sort numbers using Arrays.sort()</li>
+ *     <li>Calculate mean, median, and mode</li>
+ * </ul>
+ *
+ * <p>
+ * The application provides a clean GUI with input controls,
+ * output display, and statistical summaries.
+ * </p>
+ *
+ * @author YourName
+ * @version 2.0
+ */
+public class SortFX extends Application {
+
+    /**
+     * Launches the JavaFX application UI.
+     *
+     * @param stage the primary application window
+     */
+    @Override
+    public void start(Stage stage) {
+
+        // =========================
+        // INPUT SECTION
+        // =========================
+
+        // Label instructing user input
+        Label inputLabel = new Label("Enter comma-separated numbers:");
+
+        // TextField for manual input
+        TextField inputField = new TextField();
+        inputField.setPromptText("Example: 5, 2, 9, 1");
+
+        // =========================
+        // RANDOM GENERATOR SECTION
+        // =========================
+
+        // Sample size input
+        Label sampleSizeLabel = new Label("Sample Size:");
+        TextField sampleSizeField = new TextField();
+        sampleSizeField.setPromptText("e.g. 10");
+
+        // Max value input
+        Label maxValueLabel = new Label("Max Value:");
+        TextField maxValueField = new TextField();
+        maxValueField.setPromptText("e.g. 100");
+
+        // Button to generate random numbers
+        Button generateButton = new Button("Generate Random Numbers");
+
+        // =========================
+        // SORT BUTTON
+        // =========================
+
+        // Button to trigger sorting
+        Button sortButton = new Button("Sort Numbers");
+
+        // =========================
+        // OUTPUT SECTION
+        // =========================
+
+        Label outputLabel = new Label("Sorted Output:");
+
+        // TextArea for displaying results
+        TextArea outputArea = new TextArea();
+        outputArea.setEditable(false);
+        outputArea.setWrapText(true);
+
+        // Allow output area to expand with window resizing
+        VBox.setVgrow(outputArea, Priority.ALWAYS);
+
+        // =========================
+        // STATISTICS SECTION
+        // =========================
+
+        Label meanLabel = new Label("Mean:");
+        TextField meanField = new TextField();
+        meanField.setEditable(false);
+
+        Label medianLabel = new Label("Median:");
+        TextField medianField = new TextField();
+        medianField.setEditable(false);
+
+        Label modeLabel = new Label("Mode:");
+        TextField modeField = new TextField();
+        modeField.setEditable(false);
+
+        // Grid layout for stats
+        GridPane statsGrid = new GridPane();
+        statsGrid.setHgap(10);
+        statsGrid.setVgap(5);
+
+        statsGrid.add(meanLabel, 0, 0);
+        statsGrid.add(meanField, 1, 0);
+
+        statsGrid.add(medianLabel, 0, 1);
+        statsGrid.add(medianField, 1, 1);
+
+        statsGrid.add(modeLabel, 0, 2);
+        statsGrid.add(modeField, 1, 2);
+
+        // =========================
+        // RANDOM GENERATION LOGIC
+        // =========================
+
+        generateButton.setOnAction(e -> {
+            try {
+                // Parse user inputs
+                int size = Integer.parseInt(sampleSizeField.getText().trim());
+                int max = Integer.parseInt(maxValueField.getText().trim());
+
+                // Validate inputs (no negatives or zero)
+                if (size <= 0 || max <= 0) {
+                    throw new IllegalArgumentException();
+                }
+
+                Random rand = new Random();
+                StringBuilder generated = new StringBuilder();
+
+                // Generate random numbers between 1 and max
+                for (int i = 0; i < size; i++) {
+                    int num = rand.nextInt(max) + 1;
+                    generated.append(num);
+
+                    if (i < size - 1) {
+                        generated.append(", ");
+                    }
+                }
+
+                // Insert generated numbers into input field
+                inputField.setText(generated.toString());
+
+                // Automatically trigger sorting after generation
+                sortButton.fire();
+
+            } catch (Exception ex) {
+                outputArea.setStyle("-fx-text-fill: red;");
+                outputArea.setText("Invalid random settings.\nEnter positive integers for size and max.");
+            }
+        });
+
+        // =========================
+        // SORTING + CALCULATION LOGIC
+        // =========================
+
+        sortButton.setOnAction(e -> {
+            try {
+                String input = inputField.getText();
+                String[] parts = input.split(",");
+
+                int[] numbers = new int[parts.length];
+
+                // Convert input strings to integers
+                for (int i = 0; i < parts.length; i++) {
+                    numbers[i] = Integer.parseInt(parts[i].trim());
+                }
+
+                // Sort numbers
+                Arrays.sort(numbers);
+
+                // Build output display
+                StringBuilder result = new StringBuilder();
+                result.append("Sorted (array view):\n");
+                result.append(Arrays.toString(numbers)).append("\n\n");
+
+                result.append("One per row:\n");
+                for (int n : numbers) {
+                    result.append(n).append("\n");
+                }
+
+                outputArea.setStyle("-fx-text-fill: black;");
+                outputArea.setText(result.toString());
+
+                // Calculate statistics
+                meanField.setText(String.format("%.2f", calculateMean(numbers)));
+                medianField.setText(String.format("%.2f", calculateMedian(numbers)));
+                modeField.setText(calculateMode(numbers));
+
+            } catch (Exception ex) {
+                outputArea.setStyle("-fx-text-fill: red;");
+                outputArea.setText("Invalid input.\nUse comma-separated numbers.");
+
+                meanField.clear();
+                medianField.clear();
+                modeField.clear();
+            }
+        });
+
+        // =========================
+        // LAYOUT
+        // =========================
+
+        VBox layout = new VBox(10);
+        layout.setStyle("-fx-padding: 15;");
+
+        layout.getChildren().addAll(
+                inputLabel,
+                inputField,
+                sampleSizeLabel,
+                sampleSizeField,
+                maxValueLabel,
+                maxValueField,
+                generateButton,
+                sortButton,
+                outputLabel,
+                outputArea,
+                statsGrid
+        );
+
+        Scene scene = new Scene(layout, 500, 500);
+
+        stage.setTitle("Number Sorter + Statistics (JavaFX)");
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    /**
+     * Calculates the mean (average) of an array.
+     *
+     * @param numbers array of integers
+     * @return mean value as double
+     */
+    private double calculateMean(int[] numbers) {
+        int sum = 0;
+        for (int n : numbers) {
+            sum += n;
+        }
+        return (double) sum / numbers.length;
+    }
+
+    /**
+     * Calculates the median value.
+     *
+     * @param numbers sorted array of integers
+     * @return median value
+     */
+    private double calculateMedian(int[] numbers) {
+        int middle = numbers.length / 2;
+
+        if (numbers.length % 2 == 0) {
+            return (numbers[middle - 1] + numbers[middle]) / 2.0;
+        } else {
+            return numbers[middle];
+        }
+    }
+
+    /**
+     * Calculates the mode (most frequent number).
+     *
+     * @param numbers array of integers
+     * @return mode as String
+     */
+    private String calculateMode(int[] numbers) {
+        Map<Integer, Integer> frequencyMap = new HashMap<>();
+
+        for (int n : numbers) {
+            frequencyMap.put(n, frequencyMap.getOrDefault(n, 0) + 1);
+        }
+
+        int mode = numbers[0];
+        int maxCount = 0;
+
+        for (Map.Entry<Integer, Integer> entry : frequencyMap.entrySet()) {
+            if (entry.getValue() > maxCount) {
+                mode = entry.getKey();
+                maxCount = entry.getValue();
+            }
+        }
+
+        return String.valueOf(mode);
+    }
+
+    /**
+     * Main entry point.
+     *
+     * @param args command-line arguments (unused)
+     */
+    public static void main(String[] args) {
+        launch();
+    }
+}
