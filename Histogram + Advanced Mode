@@ -1,0 +1,255 @@
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.chart.*;
+import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+import java.util.*;
+
+/**
+ * JavaFX application for:
+ * - Sorting numbers
+ * - Calculating mean, median, mode
+ * - Generating random datasets
+ * - Displaying histogram visualization
+ *
+ * Features:
+ * - Handles no mode and multiple modes
+ * - Resizable UI
+ * - Error handling
+ *
+ * @author YourName
+ * @version 3.0
+ */
+public class SortFX extends Application {
+
+    @Override
+    public void start(Stage stage) {
+
+        // ================= INPUT =================
+        Label inputLabel = new Label("Enter comma-separated numbers:");
+        TextField inputField = new TextField();
+        inputField.setPromptText("Example: 5, 2, 9, 1");
+
+        // ================= RANDOM GENERATOR =================
+        Label sampleSizeLabel = new Label("Sample Size:");
+        TextField sampleSizeField = new TextField();
+
+        Label maxValueLabel = new Label("Max Value:");
+        TextField maxValueField = new TextField();
+
+        Button generateButton = new Button("Generate Random Numbers");
+
+        // ================= SORT BUTTON =================
+        Button sortButton = new Button("Sort Numbers");
+
+        // ================= OUTPUT =================
+        Label outputLabel = new Label("Sorted Output:");
+        TextArea outputArea = new TextArea();
+        outputArea.setEditable(false);
+        outputArea.setWrapText(true);
+        VBox.setVgrow(outputArea, Priority.ALWAYS);
+
+        // ================= STATS =================
+        TextField meanField = new TextField();
+        TextField medianField = new TextField();
+        TextField modeField = new TextField();
+
+        meanField.setEditable(false);
+        medianField.setEditable(false);
+        modeField.setEditable(false);
+
+        GridPane statsGrid = new GridPane();
+        statsGrid.setHgap(10);
+        statsGrid.setVgap(5);
+
+        statsGrid.add(new Label("Mean:"), 0, 0);
+        statsGrid.add(meanField, 1, 0);
+
+        statsGrid.add(new Label("Median:"), 0, 1);
+        statsGrid.add(medianField, 1, 1);
+
+        statsGrid.add(new Label("Mode:"), 0, 2);
+        statsGrid.add(modeField, 1, 2);
+
+        // ================= HISTOGRAM =================
+        CategoryAxis xAxis = new CategoryAxis();
+        NumberAxis yAxis = new NumberAxis();
+        BarChart<String, Number> histogram = new BarChart<>(xAxis, yAxis);
+        histogram.setTitle("Histogram");
+        xAxis.setLabel("Value");
+        yAxis.setLabel("Frequency");
+
+        VBox.setVgrow(histogram, Priority.ALWAYS);
+
+        // ================= RANDOM LOGIC =================
+        generateButton.setOnAction(e -> {
+            try {
+                int size = Integer.parseInt(sampleSizeField.getText().trim());
+                int max = Integer.parseInt(maxValueField.getText().trim());
+
+                if (size <= 0 || max <= 0) throw new IllegalArgumentException();
+
+                Random rand = new Random();
+                StringBuilder sb = new StringBuilder();
+
+                for (int i = 0; i < size; i++) {
+                    int num = rand.nextInt(max) + 1;
+                    sb.append(num);
+                    if (i < size - 1) sb.append(", ");
+                }
+
+                inputField.setText(sb.toString());
+
+                // Auto-sort after generation
+                sortButton.fire();
+
+            } catch (Exception ex) {
+                outputArea.setStyle("-fx-text-fill: red;");
+                outputArea.setText("Invalid random settings.");
+            }
+        });
+
+        // ================= SORT + ANALYSIS =================
+        sortButton.setOnAction(e -> {
+            try {
+                String[] parts = inputField.getText().split(",");
+                int[] numbers = new int[parts.length];
+
+                for (int i = 0; i < parts.length; i++) {
+                    numbers[i] = Integer.parseInt(parts[i].trim());
+                }
+
+                Arrays.sort(numbers);
+
+                // ---------- TEXT OUTPUT ----------
+                StringBuilder result = new StringBuilder();
+                result.append("Sorted:\n").append(Arrays.toString(numbers)).append("\n\n");
+
+                for (int n : numbers) result.append(n).append("\n");
+
+                outputArea.setStyle("-fx-text-fill: black;");
+                outputArea.setText(result.toString());
+
+                // ---------- STATS ----------
+                meanField.setText(String.format("%.2f", calculateMean(numbers)));
+                medianField.setText(String.format("%.2f", calculateMedian(numbers)));
+                modeField.setText(calculateModeAdvanced(numbers));
+
+                // ---------- HISTOGRAM ----------
+                histogram.getData().clear();
+
+                Map<Integer, Integer> freq = buildFrequencyMap(numbers);
+                XYChart.Series<String, Number> series = new XYChart.Series<>();
+
+                for (Map.Entry<Integer, Integer> entry : freq.entrySet()) {
+                    series.getData().add(
+                            new XYChart.Data<>(
+                                    String.valueOf(entry.getKey()),
+                                    entry.getValue()
+                            )
+                    );
+                }
+
+                histogram.getData().add(series);
+
+            } catch (Exception ex) {
+                outputArea.setStyle("-fx-text-fill: red;");
+                outputArea.setText("Invalid input.");
+                meanField.clear();
+                medianField.clear();
+                modeField.clear();
+                histogram.getData().clear();
+            }
+        });
+
+        // ================= LAYOUT =================
+        VBox layout = new VBox(10);
+        layout.setStyle("-fx-padding: 15;");
+
+        layout.getChildren().addAll(
+                inputLabel,
+                inputField,
+                sampleSizeLabel,
+                sampleSizeField,
+                maxValueLabel,
+                maxValueField,
+                generateButton,
+                sortButton,
+                outputLabel,
+                outputArea,
+                statsGrid,
+                histogram
+        );
+
+        Scene scene = new Scene(layout, 600, 650);
+
+        stage.setTitle("Number Sorter + Statistics + Histogram");
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    /**
+     * Calculates mean.
+     */
+    private double calculateMean(int[] numbers) {
+        int sum = 0;
+        for (int n : numbers) sum += n;
+        return (double) sum / numbers.length;
+    }
+
+    /**
+     * Calculates median.
+     */
+    private double calculateMedian(int[] numbers) {
+        int mid = numbers.length / 2;
+        return (numbers.length % 2 == 0)
+                ? (numbers[mid - 1] + numbers[mid]) / 2.0
+                : numbers[mid];
+    }
+
+    /**
+     * Builds frequency map.
+     */
+    private Map<Integer, Integer> buildFrequencyMap(int[] numbers) {
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int n : numbers) {
+            map.put(n, map.getOrDefault(n, 0) + 1);
+        }
+        return map;
+    }
+
+    /**
+     * Advanced mode calculation:
+     * - Returns "No mode" if all values occur once
+     * - Returns multiple modes if tie exists
+     */
+    private String calculateModeAdvanced(int[] numbers) {
+        Map<Integer, Integer> freq = buildFrequencyMap(numbers);
+
+        int maxCount = Collections.max(freq.values());
+
+        // No mode (all frequency = 1)
+        if (maxCount == 1) return "No mode";
+
+        List<Integer> modes = new ArrayList<>();
+
+        for (Map.Entry<Integer, Integer> entry : freq.entrySet()) {
+            if (entry.getValue() == maxCount) {
+                modes.add(entry.getKey());
+            }
+        }
+
+        return modes.toString();
+    }
+
+    /**
+     * Main entry point.
+     */
+    public static void main(String[] args) {
+        launch();
+    }
+}
