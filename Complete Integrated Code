@@ -1,0 +1,291 @@
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.chart.*;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.stage.Stage;
+
+import java.util.*;
+
+/**
+ * Advanced JavaFX Data Exploration Tool
+ *
+ * Features:
+ * - Manual or generated datasets
+ * - Sorting + statistics (mean, median, mode)
+ * - Smart transformation suggestions
+ * - Transformations: Log, Square Root, Exponential
+ * - Dual histogram visualization (original vs transformed)
+ *
+ * @author YourName
+ * @version 4.0
+ */
+public class SortFX extends Application {
+
+    private BarChart<String, Number> originalChart;
+    private BarChart<String, Number> transformedChart;
+
+    @Override
+    public void start(Stage stage) {
+
+        // ================= INPUT =================
+        Label inputLabel = new Label("Enter comma-separated numbers:");
+        TextField inputField = new TextField();
+
+        // ================= GENERATORS =================
+        TextField sampleSizeField = new TextField();
+        sampleSizeField.setPromptText("Sample Size");
+
+        TextField maxValueField = new TextField();
+        maxValueField.setPromptText("Max Value");
+
+        Button normalBtn = new Button("Generate Normal");
+        Button logBtn = new Button("Generate Log-Skewed");
+        Button sqrtBtn = new Button("Generate Moderate Skew");
+        Button expBtn = new Button("Generate Exponential");
+
+        // ================= TRANSFORM =================
+        ComboBox<String> transformBox = new ComboBox<>();
+        transformBox.getItems().addAll(
+                "None", "Log Transform", "Square Root Transform", "Exponential Transform"
+        );
+        transformBox.setValue("None");
+
+        Label suggestionLabel = new Label("Suggestion: ");
+
+        Button sortButton = new Button("Analyze Data");
+
+        // ================= OUTPUT =================
+        TextArea outputArea = new TextArea();
+        outputArea.setEditable(false);
+        VBox.setVgrow(outputArea, Priority.ALWAYS);
+
+        TextField meanField = new TextField();
+        TextField medianField = new TextField();
+        TextField modeField = new TextField();
+
+        meanField.setEditable(false);
+        medianField.setEditable(false);
+        modeField.setEditable(false);
+
+        GridPane statsGrid = new GridPane();
+        statsGrid.setHgap(10);
+        statsGrid.addRow(0, new Label("Mean:"), meanField);
+        statsGrid.addRow(1, new Label("Median:"), medianField);
+        statsGrid.addRow(2, new Label("Mode:"), modeField);
+
+        // ================= CHARTS =================
+        originalChart = createChart("Original Data");
+        transformedChart = createChart("Transformed Data");
+
+        HBox chartsBox = new HBox(10, originalChart, transformedChart);
+        VBox.setVgrow(chartsBox, Priority.ALWAYS);
+
+        // ================= GENERATOR LOGIC =================
+        normalBtn.setOnAction(e -> generateData(inputField, sampleSizeField, maxValueField, "normal", sortButton));
+        logBtn.setOnAction(e -> generateData(inputField, sampleSizeField, maxValueField, "log", sortButton));
+        sqrtBtn.setOnAction(e -> generateData(inputField, sampleSizeField, maxValueField, "sqrt", sortButton));
+        expBtn.setOnAction(e -> generateData(inputField, sampleSizeField, maxValueField, "exp", sortButton));
+
+        // ================= ANALYSIS =================
+        sortButton.setOnAction(e -> {
+            try {
+                int[] numbers = parseInput(inputField.getText());
+                Arrays.sort(numbers);
+
+                outputArea.setText(Arrays.toString(numbers));
+
+                double mean = calculateMean(numbers);
+                double median = calculateMedian(numbers);
+                String mode = calculateModeAdvanced(numbers);
+
+                meanField.setText(String.format("%.2f", mean));
+                medianField.setText(String.format("%.2f", median));
+                modeField.setText(mode);
+
+                // Suggest transformation
+                suggestionLabel.setText("Suggestion: " + suggestTransform(mean, median));
+
+                // Update charts
+                updateChart(originalChart, numbers);
+
+                double[] transformed = applyTransform(numbers, transformBox.getValue());
+                updateChart(transformedChart, transformed);
+
+            } catch (Exception ex) {
+                outputArea.setText("Invalid input.");
+            }
+        });
+
+        // ================= LAYOUT =================
+        VBox layout = new VBox(10);
+        layout.setStyle("-fx-padding: 15;");
+        layout.getChildren().addAll(
+                inputLabel, inputField,
+                sampleSizeField, maxValueField,
+                new HBox(5, normalBtn, logBtn, sqrtBtn, expBtn),
+                new Label("Transformation:"), transformBox,
+                suggestionLabel,
+                sortButton,
+                outputArea,
+                statsGrid,
+                chartsBox
+        );
+
+        stage.setScene(new Scene(layout, 900, 700));
+        stage.setTitle("Data Explorer Tool");
+        stage.show();
+    }
+
+    /**
+     * Creates a BarChart for histogram display.
+     */
+    private BarChart<String, Number> createChart(String title) {
+        CategoryAxis x = new CategoryAxis();
+        NumberAxis y = new NumberAxis();
+        BarChart<String, Number> chart = new BarChart<>(x, y);
+        chart.setTitle(title);
+        return chart;
+    }
+
+    /**
+     * Parses input string into int array.
+     */
+    private int[] parseInput(String input) {
+        String[] parts = input.split(",");
+        int[] nums = new int[parts.length];
+        for (int i = 0; i < parts.length; i++) {
+            nums[i] = Integer.parseInt(parts[i].trim());
+        }
+        return nums;
+    }
+
+    /**
+     * Generates datasets based on type.
+     */
+    private void generateData(TextField inputField, TextField sizeField, TextField maxField,
+                              String type, Button sortButton) {
+
+        try {
+            int size = Integer.parseInt(sizeField.getText());
+            int max = Integer.parseInt(maxField.getText());
+
+            Random r = new Random();
+            StringBuilder sb = new StringBuilder();
+
+            for (int i = 0; i < size; i++) {
+                int val;
+
+                switch (type) {
+                    case "log":
+                        val = (int)(Math.pow(r.nextDouble(), 3) * max) + 1;
+                        break;
+                    case "sqrt":
+                        val = (int)(Math.pow(r.nextDouble(), 2) * max) + 1;
+                        break;
+                    case "exp":
+                        val = (int)Math.exp(r.nextDouble() * 3);
+                        break;
+                    default:
+                        val = r.nextInt(max) + 1;
+                }
+
+                sb.append(val);
+                if (i < size - 1) sb.append(", ");
+            }
+
+            inputField.setText(sb.toString());
+            sortButton.fire();
+
+        } catch (Exception ignored) {}
+    }
+
+    /**
+     * Suggests transformation based on skew.
+     */
+    private String suggestTransform(double mean, double median) {
+        if (mean > median * 1.1) return "Right-skewed → Try Log Transform";
+        if (mean < median * 0.9) return "Left-skewed → Try Exponential Transform";
+        if (mean != median) return "Moderate skew → Try Square Root Transform";
+        return "Data looks symmetric";
+    }
+
+    /**
+     * Applies selected transformation.
+     */
+    private double[] applyTransform(int[] data, String type) {
+        double[] result = new double[data.length];
+
+        for (int i = 0; i < data.length; i++) {
+            switch (type) {
+                case "Log Transform":
+                    result[i] = Math.log(data[i]);
+                    break;
+                case "Square Root Transform":
+                    result[i] = Math.sqrt(data[i]);
+                    break;
+                case "Exponential Transform":
+                    result[i] = Math.exp(data[i] * 0.1);
+                    break;
+                default:
+                    result[i] = data[i];
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Updates histogram chart.
+     */
+    private void updateChart(BarChart<String, Number> chart, double[] data) {
+        chart.getData().clear();
+
+        Map<Integer, Integer> freq = new HashMap<>();
+
+        for (double d : data) {
+            int key = (int)Math.round(d);
+            freq.put(key, freq.getOrDefault(key, 0) + 1);
+        }
+
+        XYChart.Series<String, Number> series = new XYChart.Series<>();
+
+        for (Map.Entry<Integer, Integer> e : freq.entrySet()) {
+            series.getData().add(new XYChart.Data<>(String.valueOf(e.getKey()), e.getValue()));
+        }
+
+        chart.getData().add(series);
+    }
+
+    private void updateChart(BarChart<String, Number> chart, int[] data) {
+        double[] d = Arrays.stream(data).asDoubleStream().toArray();
+        updateChart(chart, d);
+    }
+
+    private double calculateMean(int[] n) {
+        return Arrays.stream(n).average().orElse(0);
+    }
+
+    private double calculateMedian(int[] n) {
+        int mid = n.length / 2;
+        return (n.length % 2 == 0) ? (n[mid-1] + n[mid]) / 2.0 : n[mid];
+    }
+
+    private String calculateModeAdvanced(int[] numbers) {
+        Map<Integer, Integer> freq = new HashMap<>();
+        for (int n : numbers) freq.put(n, freq.getOrDefault(n, 0) + 1);
+
+        int max = Collections.max(freq.values());
+        if (max == 1) return "No mode";
+
+        List<Integer> modes = new ArrayList<>();
+        for (var e : freq.entrySet()) {
+            if (e.getValue() == max) modes.add(e.getKey());
+        }
+
+        return modes.toString();
+    }
+
+    public static void main(String[] args) {
+        launch();
+    }
+}
