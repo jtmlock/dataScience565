@@ -1,0 +1,140 @@
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+import java.util.Arrays;
+
+/**
+ * A simple JavaFX application that allows a user to enter
+ * comma-separated numbers, sort them, and display the results.
+ *
+ * <p>
+ * Features:
+ * <ul>
+ *     <li>User input via TextField</li>
+ *     <li>Sorting using Arrays.sort()</li>
+ *     <li>Formatted output in a resizable TextArea</li>
+ *     <li>Error handling with user feedback</li>
+ * </ul>
+ * </p>
+ *
+ * @author YourName
+ * @version 1.0
+ */
+public class SortFX extends Application {
+
+    /**
+     * Entry point for JavaFX application.
+     *
+     * @param stage The primary window (stage)
+     */
+    @Override
+    public void start(Stage stage) {
+
+        // ---------- INPUT LABEL ----------
+        // Provides instructions to the user
+        Label inputLabel = new Label("Enter comma-separated numbers:");
+
+        // ---------- INPUT FIELD ----------
+        // Where the user types values like: 5, 2, 9, 1
+        TextField inputField = new TextField();
+        inputField.setPromptText("Example: 5, 2, 9, 1");
+
+        // ---------- BUTTON ----------
+        // Triggers the sorting process
+        Button sortButton = new Button("Sort Numbers");
+
+        // ---------- OUTPUT LABEL ----------
+        // Describes the output section
+        Label outputLabel = new Label("Sorted Output:");
+
+        // ---------- OUTPUT AREA ----------
+        // Displays results; set to be resizable
+        TextArea outputArea = new TextArea();
+        outputArea.setEditable(false); // prevent user editing
+        outputArea.setWrapText(true);  // wrap long lines
+
+        // Allow the TextArea to grow when window resizes
+        VBox.setVgrow(outputArea, Priority.ALWAYS);
+
+        // ---------- BUTTON ACTION ----------
+        // Defines what happens when the button is clicked
+        sortButton.setOnAction(e -> {
+
+            try {
+                // Get user input
+                String input = inputField.getText();
+
+                // Split input into parts using comma delimiter
+                String[] parts = input.split(",");
+
+                // Convert String array into int array
+                int[] numbers = new int[parts.length];
+
+                for (int i = 0; i < parts.length; i++) {
+                    numbers[i] = Integer.parseInt(parts[i].trim());
+                }
+
+                // Sort the numbers using built-in Java method
+                Arrays.sort(numbers);
+
+                // Build formatted output
+                StringBuilder result = new StringBuilder();
+
+                result.append("Sorted (array view):\n");
+                result.append(Arrays.toString(numbers)).append("\n\n");
+
+                result.append("One per row:\n");
+                for (int n : numbers) {
+                    result.append(n).append("\n");
+                }
+
+                // Display result
+                outputArea.setStyle("-fx-text-fill: black;");
+                outputArea.setText(result.toString());
+
+            } catch (Exception ex) {
+                // Handle invalid input (non-numeric, empty, etc.)
+                outputArea.setStyle("-fx-text-fill: red;");
+                outputArea.setText("Invalid input.\nPlease enter numbers separated by commas.\nExample: 5, 2, 9, 1");
+            }
+        });
+
+        // ---------- LAYOUT ----------
+        // Vertical layout with spacing
+        VBox layout = new VBox(10);
+
+        // Add padding for visual spacing
+        layout.setStyle("-fx-padding: 15;");
+
+        // Add all UI components to layout
+        layout.getChildren().addAll(
+                inputLabel,
+                inputField,
+                sortButton,
+                outputLabel,
+                outputArea
+        );
+
+        // ---------- SCENE ----------
+        // Create scene with initial size
+        Scene scene = new Scene(layout, 450, 350);
+
+        // ---------- STAGE ----------
+        stage.setTitle("Number Sorter (JavaFX)");
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    /**
+     * Main method launches the JavaFX application.
+     *
+     * @param args Command-line arguments (not used)
+     */
+    public static void main(String[] args) {
+        launch();
+    }
+}
