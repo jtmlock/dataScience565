@@ -1,0 +1,67 @@
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+import java.util.Arrays;
+
+public class SortFX extends Application {
+
+    @Override
+    public void start(Stage stage) {
+
+        // Input field
+        TextField inputField = new TextField();
+        inputField.setPromptText("Enter numbers (comma separated)");
+
+        // Button
+        Button sortButton = new Button("Sort");
+
+        // Output area
+        TextArea outputArea = new TextArea();
+        outputArea.setEditable(false);
+
+        // Button action
+        sortButton.setOnAction(e -> {
+            try {
+                String input = inputField.getText();
+                String[] parts = input.split(",");
+
+                int[] numbers = new int[parts.length];
+
+                for (int i = 0; i < parts.length; i++) {
+                    numbers[i] = Integer.parseInt(parts[i].trim());
+                }
+
+                Arrays.sort(numbers);
+
+                // Build output
+                StringBuilder result = new StringBuilder();
+                result.append("Sorted: ").append(Arrays.toString(numbers)).append("\n\n");
+                result.append("One per row:\n");
+
+                for (int n : numbers) {
+                    result.append(n).append("\n");
+                }
+
+                outputArea.setText(result.toString());
+
+            } catch (Exception ex) {
+                outputArea.setText("Invalid input. Please enter numbers separated by commas.");
+            }
+        });
+
+        VBox layout = new VBox(10, inputField, sortButton, outputArea);
+
+        Scene scene = new Scene(layout, 400, 300);
+
+        stage.setTitle("Number Sorter (JavaFX)");
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    public static void main(String[] args) {
+        launch();
+    }
+}
